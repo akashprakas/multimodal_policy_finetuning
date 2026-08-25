@@ -1,0 +1,13 @@
+name: diagnostic
+training_seeds: [0]
+evaluation_seeds: [777]
+max_n_demonstrations: null
+max_bc_steps: null
+max_total_epochs: null
+max_warmup_epochs: null
+max_inference_steps: null
+max_n_envs: null
+max_ppo_batch_size: null
+n_evaluation_episodes: 256
+log_every: 0
+save_checkpoints: false

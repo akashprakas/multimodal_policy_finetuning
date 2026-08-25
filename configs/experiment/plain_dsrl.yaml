@@ -1,0 +1,29 @@
+name: plain_dsrl
+k_latent: 1
+total_epochs: 300
+warmup_epochs: 0
+curriculum: false
+intrinsic_scale: 0.0
+finetune_intrinsic_scale: 0.0
+environment_reward_scale: 1.0
+entropy_coef: 0.01
+w_bound: 3.0
+min_log_std: -20.0
+steering_dims: [128, 128]
+inference_dims: [128, 128]
+critic_dims: [64, 64]
+steering_lr: 0.003
+critic_lr: 0.003
+inference_lr: 0.01
+inference_steps: 32
+inference_batch_size: 256
+inference_input_noise_std: 0.30
+n_envs: 64
+ppo_batch_size: 32
+ppo_update_epochs: 4
+gamma: 0.99
+gae_lambda: 0.95
+clip_epsilon: 0.20
+value_coef: 0.5
+max_grad_norm: 1.0
+target_kl: 1.0

@@ -1,0 +1,7 @@
+name: four_goal
+observation_dim: 2
+action_dim: 2
+n_goals: 4
+goal_radius: 1.0
+reward_sigma: 0.25
+success_distance: 0.30
