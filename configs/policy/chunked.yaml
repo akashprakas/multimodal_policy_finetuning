@@ -1,0 +1,14 @@
+name: chunked
+chunk_length: 4
+episode_steps: 16
+curriculum_start_units: 1
+denoising_steps: 20
+ddim_steps: 2
+time_embedding_dim: 8
+network_dims: [64, 64]
+denoised_clip_value: 1.5
+n_demonstrations: 4000
+bc_steps: 4000
+bc_batch_size: 256
+bc_learning_rate: 0.001
+expert_action_noise_std: 0.01

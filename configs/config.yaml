@@ -1,0 +1,35 @@
+defaults:
+  - environment: four_goal
+  - policy: single_step
+  - experiment: bmd
+  - landscape: g0
+  - _self_
+  - run: smoke
+  - diagnostic: grid_search
+
+device: cpu
+checkpoint_path: null
+
+seeds:
+  bc: 2
+  training: [0]
+  evaluation: [777]
+  environment_offset: 1
+
+evaluation:
+  n_episodes: 256
+  min_attempts: 5
+  deterministic_steering: false
+
+logging:
+  log_every: 20
+  save_checkpoints: true
+
+hydra:
+  job:
+    chdir: false
+  run:
+    dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}_${experiment.name}_${policy.name}_${landscape.name}
+  sweep:
+    dir: multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    subdir: ${hydra.job.num}_${experiment.name}_${policy.name}_${landscape.name}

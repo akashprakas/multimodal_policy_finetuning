@@ -4,9 +4,9 @@ from dataclasses import dataclass
 
 import numpy as np
 import torch
-from four_goal_bmd.envs.four_goal import FourGoalEnv
 
 from four_goal_bmd.algorithms.ppo import ppo_update
+from four_goal_bmd.envs.four_goals import FourGoalEnv
 from four_goal_bmd.models.diffusion import FrozenDiffusionPolicy
 from four_goal_bmd.models.steering import InferenceModel, LatentCritic, SteeringPolicy
 from four_goal_bmd.rollouts import collect_rollout
@@ -76,17 +76,6 @@ def train_bmd(
         success_distance=environment_cfg.success_distance,
         seed=environment_seed,
     )
-    # Dedicated generator for anchor eps draws: anchor sampling must not perturb
-    # the rollout RNG.
-    anchor_generator = None
-    if (
-        experiment_cfg.get("dsrl_anchor_type", "none") != "none"
-        and float(experiment_cfg.get("dsrl_anchor_coef", 0.0)) > 0.0
-    ):
-        anchor_generator = torch.Generator().manual_seed(
-            int(experiment_cfg.get("dsrl_anchor_seed", 20260824)) + seed
-        )
-
     maximum_units = policy_cfg.episode_steps // policy_cfg.chunk_length
     start_units = policy_cfg.curriculum_start_units
     history: list[dict[str, float]] = []
@@ -126,8 +115,6 @@ def train_bmd(
             inference_optimizer,
             rollout,
             experiment_cfg,
-            frozen_policy=frozen_policy,
-            anchor_generator=anchor_generator,
         )
         record = {
             "epoch": epoch,
