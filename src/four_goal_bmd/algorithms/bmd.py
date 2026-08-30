@@ -116,12 +116,15 @@ def train_bmd(
             rollout,
             experiment_cfg,
         )
+        # per-env total env reward this rollout, to see how compounded noise scales with horizon
+        r_env_per_env = rollout["r_env"].sum(axis=0)
         record = {
             "epoch": epoch,
             "horizon_units": units,
             "phase": "fine_tune" if use_environment_reward else "discovery",
             "r_int": float(rollout["r_int"].mean()),
             "r_env": float(rollout["r_env"].mean()),
+            "r_env_var_across_envs": float(r_env_per_env.var()),
             "success": float(rollout["success"].max(axis=0).mean()),
             "log_std": float(steering_policy.log_std.detach().mean()),
             **update,
@@ -133,6 +136,7 @@ def train_bmd(
             print(
                 f"epoch={epoch:3d} phase={record['phase']:9s} units={units:2d} "
                 f"r_int={record['r_int']:+.3f} r_env={record['r_env']:+.4f} "
+                f"r_env_var={record['r_env_var_across_envs']:.4f} "
                 f"nll={record['nll']:.3f} log_std={record['log_std']:+.2f}"
             )
 
