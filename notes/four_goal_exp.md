@@ -100,6 +100,7 @@ uv run python train.py run=final policy=single_step experiment=plain_dsrl landsc
 uv run python train.py run=final policy=single_step experiment=plain_dsrl landscape=g2 experiment.entropy_coef=0.01 experiment.k_latent=8 experiment.curriculum=true experiment.warmup_epochs=120 experiment.intrinsic_scale=2.0 experiment.finetune_intrinsic_scale=0.20
 uv run python train.py run=final policy=single_step experiment=plain_dsrl landscape=g2 experiment.entropy_coef=0.05 experiment.k_latent=8 experiment.curriculum=true experiment.warmup_epochs=120 experiment.intrinsic_scale=2.0 experiment.finetune_intrinsic_scale=0.20
 uv run python train.py run=final policy=single_step experiment=plain_dsrl landscape=g2 experiment.entropy_coef=0.1 experiment.k_latent=8 experiment.curriculum=true experiment.warmup_epochs=120 experiment.intrinsic_scale=2.0 experiment.finetune_intrinsic_scale=0.20   # pending, not yet logged
+
 ```
 
 | entropy_coef | SR (mean) | SR_M | mcf | H/logM | Hs/logM |
@@ -119,6 +120,53 @@ ent=0.00 SR:  1.000  0.727  0.617  0.996  0.988  0.992  0.727  1.000
 ent=0.01 SR:  0.992  1.000  1.000  1.000  0.980  0.996  0.844  0.992
 ent=0.05 SR:  0.949  0.992  0.930  0.949  0.961  0.977  0.988  0.980
 ```
+
+
+## 8. Ablation: classifier input noise (`inference_input_noise_std`)
+
+Paired comparison, both using `experiment=bmd` (full recipe) directly, only
+`inference_input_noise_std` differs:
+
+```
+uv run python train.py run=final experiment=bmd policy=single_step landscape=g2 experiment.inference_input_noise_std=0.0
+uv run python train.py run=final experiment=bmd policy=single_step landscape=g2
+```
+
+| | inference_input_noise_std=0.0 | =0.30 (default) |
+| --- | ---: | ---: |
+| SR | 0.213 | 0.976 |
+| SR_M | 0.206 | 0.797 |
+| mcf | 0.25/4 | 3.12/4 |
+| H/logM | 0.965 | 0.793 |
+| Hs/logM | 0.206 | 0.793 |
+| radius | 0.375 | 0.764 |
+
+The `0.30`-noise result matches the equivalent `plain_dsrl`+overrides row from
+section 7 almost exactly (SR=0.976, mcf=3.12/4 both ways) -- good cross-check
+that the two construction paths are truly equivalent.
+
+**The noise regularizer is load-bearing, and the `H` vs `Hs` gap is the
+clearest evidence why.** Without it: `radius=0.375` collapses to roughly the
+same magnitude as the historical "modes that don't travel" trace in section 16
+(radius ~0.23-0.31 during that failure). And `H/logM=0.965` (near-maximum,
+attempts spread almost evenly across all 4 goal-bins) sits right next to
+`Hs/logM=0.206` (successes concentrated on essentially one goal) -- this is
+Trap B from `lab_guide.md` reproduced directly: raw `H` looks great because
+*failures* scatter roughly evenly across all 4 nearest-goal bins by chance,
+not because the policy is meaningfully covering all 4 goals. `SR=0.213` (most
+episodes fail) confirms the "attempts" and "successes" distributions are
+telling very different stories here, which raw `H` alone would hide.
+
+Mechanism: with `training_noise_std=0`, the classifier can reward the steering
+policy for arbitrarily small state differences -- including jitter that never
+leaves the immediate area around the origin. `q_phi` learns to tell 8 such
+jitter patterns apart perfectly well (hence high raw `H`), but none of that
+motion is goal-directed, so the intrinsic reward stops correlating with actual
+task progress and training collapses toward useless, non-traveling behavior.
+Smoothing the classifier's input with noise of scale 0.30 makes any
+distinction smaller than that noise floor unrewardable, forcing the policy to
+create separations large enough to correspond to real, distinct locations.
+
 
 **Conclusion, corrected after looking at per-seed data, not just aggregates:**
 entropy cleanly raises the *worst-case SR floor* across seeds (0.617 -> 0.844
