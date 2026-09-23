@@ -97,8 +97,11 @@ doing real work here, not just an artifact of idle pre-training.
 commands (base is row 6's command, only `entropy_coef` changes):
 ```
 uv run python train.py run=final policy=single_step experiment=plain_dsrl landscape=g2 experiment.entropy_coef=0.00 experiment.k_latent=8 experiment.curriculum=true experiment.warmup_epochs=120 experiment.intrinsic_scale=2.0 experiment.finetune_intrinsic_scale=0.20
+
 uv run python train.py run=final policy=single_step experiment=plain_dsrl landscape=g2 experiment.entropy_coef=0.01 experiment.k_latent=8 experiment.curriculum=true experiment.warmup_epochs=120 experiment.intrinsic_scale=2.0 experiment.finetune_intrinsic_scale=0.20
+
 uv run python train.py run=final policy=single_step experiment=plain_dsrl landscape=g2 experiment.entropy_coef=0.05 experiment.k_latent=8 experiment.curriculum=true experiment.warmup_epochs=120 experiment.intrinsic_scale=2.0 experiment.finetune_intrinsic_scale=0.20
+
 uv run python train.py run=final policy=single_step experiment=plain_dsrl landscape=g2 experiment.entropy_coef=0.1 experiment.k_latent=8 experiment.curriculum=true experiment.warmup_epochs=120 experiment.intrinsic_scale=2.0 experiment.finetune_intrinsic_scale=0.20   # pending, not yet logged
 
 ```
