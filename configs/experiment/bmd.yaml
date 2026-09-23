@@ -27,3 +27,9 @@ clip_epsilon: 0.20
 value_coef: 0.5
 max_grad_norm: 1.0
 target_kl: 1.0
+
+# Behavior anchor on eps -> D(s, w_psi(s,z,eps)).
+dsrl_anchor_type: none
+dsrl_anchor_coef: 0.0
+dsrl_anchor_seed: 20260824
+dsrl_anchor_draws: 2

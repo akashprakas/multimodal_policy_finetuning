@@ -143,8 +143,34 @@ class DiffusionModel(nn.Module):
         )
         return clean.clamp(-self.denoised_clip_value, self.denoised_clip_value)
 
+    def ddim_sample_differentiable(
+        self,
+        initial_noise: torch.Tensor,
+        condition: torch.Tensor,
+        inference_steps: int,
+        eta: float = 0.0,
+    ) -> torch.Tensor:
+        """`ddim_sample` without the no-grad guard.
+
+        The decoder's own parameters stay frozen; this exists so gradients can
+        reach whatever produced `initial_noise` -- in DSRL, the steering policy.
+        The composite map eps -> D(s, w_psi(s, eps)) is trainable through psi even
+        though D is not, which is what makes a behavior-level anchor possible here.
+        Verified numerically identical to `ddim_sample` in tests/test_dsrl_anchors.py.
+        """
+        return self._ddim_sample_impl(initial_noise, condition, inference_steps, eta)
+
     @torch.no_grad()
     def ddim_sample(
+        self,
+        initial_noise: torch.Tensor,
+        condition: torch.Tensor,
+        inference_steps: int,
+        eta: float = 0.0,
+    ) -> torch.Tensor:
+        return self._ddim_sample_impl(initial_noise, condition, inference_steps, eta)
+
+    def _ddim_sample_impl(
         self,
         initial_noise: torch.Tensor,
         condition: torch.Tensor,

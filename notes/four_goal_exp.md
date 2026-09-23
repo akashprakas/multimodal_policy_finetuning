@@ -193,3 +193,9 @@ logged.
 - Full bridge still needs: re-ablate `environment_reward_scale` (row 7 of the
   original 7-step plan), then repeat on landscape=g0 and policy=chunked.
 
+
+
+
+# Funcitonal anchor
+
+The functional anchor can loosely be viewed as behavior distillation from the unsteered BC policy
