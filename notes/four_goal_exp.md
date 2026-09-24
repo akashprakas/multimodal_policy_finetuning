@@ -195,7 +195,183 @@ logged.
 
 
 
+## plain dsrl
+
+### g2
+
+```text
+
+behavior-mode) (base) ap@ap:~/Documents/behavior_mode$ uv run python train.py \
+  run=diagnostic \
+  experiment=plain_dsrl \
+  policy=single_step \
+  landscape=g2
+output_dir=/home/ap/Documents/behavior_mode/outputs/2026-09-24/21-18-45_plain_dsrl_single_step_g2
+Pretraining one frozen BC policy shared by all training seeds...
+BC step=    0 loss=0.978687
+BC step=  400 loss=0.400577
+BC step=  800 loss=0.355607
+BC step= 1200 loss=0.365017
+BC step= 1600 loss=0.208683
+BC step= 1999 loss=0.246500
+action_scale=0.051692
+BC prior: SR=0.035 SR_M=0.028 mcf=0.00/4 H/logM=0.965 Hs/logM=0.459 radius=0.494
+
+Training seed 0
+result: SR=1.000 SR_M=0.250 mcf=1.00/4 H/logM=0.000 Hs/logM=0.000 radius=0.754
+
+Training seed 1
+result: SR=1.000 SR_M=0.250 mcf=1.00/4 H/logM=0.000 Hs/logM=0.000 radius=0.763
+
+Training seed 2
+result: SR=1.000 SR_M=0.250 mcf=1.00/4 H/logM=0.000 Hs/logM=0.000 radius=0.743
+
+Aggregate: SR=1.000 SR_M=0.250 mcf=1.00/4 H/logM=0.000 Hs/logM=0.000 radius=0.753
+
+```
+
+
+### plain dsrl g0
+
+```text
+
+behavior-mode) (base) ap@ap:~/Documents/behavior_mode$  uv run python train.py \
+  run=diagnostic \
+  experiment=plain_dsrl \
+  policy=single_step \
+  landscape=g0
+output_dir=/home/ap/Documents/behavior_mode/outputs/2026-09-24/21-19-09_plain_dsrl_single_step_g0
+Pretraining one frozen BC policy shared by all training seeds...
+BC step=    0 loss=0.978687
+BC step=  400 loss=0.400577
+BC step=  800 loss=0.355607
+BC step= 1200 loss=0.365017
+BC step= 1600 loss=0.208683
+BC step= 1999 loss=0.246500
+action_scale=0.051692
+BC prior: SR=0.059 SR_M=0.055 mcf=0.00/4 H/logM=0.982 Hs/logM=0.777 radius=0.492
+
+Training seed 0
+result: SR=1.000 SR_M=0.250 mcf=1.00/4 H/logM=0.000 Hs/logM=0.000 radius=0.774
+
+Training seed 1
+result: SR=1.000 SR_M=0.250 mcf=1.00/4 H/logM=0.000 Hs/logM=0.000 radius=0.774
+
+Training seed 2
+result: SR=1.000 SR_M=0.250 mcf=1.00/4 H/logM=0.000 Hs/logM=0.000 radius=0.772
+
+Aggregate: SR=1.000 SR_M=0.250 mcf=1.00/4 H/logM=0.000 Hs/logM=0.000 radius=0.773
+
+
+```
+
+
 
 # Funcitonal anchor
 
 The functional anchor can loosely be viewed as behavior distillation from the unsteered BC policy
+
+# Notes
+
+what i observed is that if i  reduce the BC steps then BMD can do better in g2, but if 
+i increase the bc steps then BMD doesnt do that well.
+
+## bmd with 2000 steps
+
+```text
+
+(behavior-mode) (base) ap@ap:~/Documents/behavior_mode$ uv run python train.py \
+  run=diagnostic \
+  policy=single_step \          
+  policy.bc_steps=2000 \
+  experiment=bmd \
+  landscape=g2
+output_dir=/home/ap/Documents/behavior_mode/outputs/2026-09-24/20-35-47_bmd_single_step_g2
+Pretraining one frozen BC policy shared by all training seeds...
+BC step=    0 loss=0.978687
+BC step=  400 loss=0.400577
+BC step=  800 loss=0.355607
+BC step= 1200 loss=0.365017
+BC step= 1600 loss=0.208683
+BC step= 1999 loss=0.246500
+action_scale=0.051692
+BC prior: SR=0.035 SR_M=0.028 mcf=0.00/4 H/logM=0.965 Hs/logM=0.459 radius=0.494
+
+Training seed 0
+result: SR=0.984 SR_M=0.738 mcf=3.00/4 H/logM=0.650 Hs/logM=0.648 radius=0.771
+
+Aggregate: SR=0.984 SR_M=0.738 mcf=3.00/4 H/logM=0.650 Hs/logM=0.648 radius=0.771
+
+```
+
+## bmd with 20k steps
+
+```text
+
+behavior-mode) (base) ap@ap:~/Documents/behavior_mode$ uv run python train.py \
+  run=diagnostic \
+  policy=single_step \
+  policy.bc_steps=20000 \
+  experiment=bmd \
+  landscape=g2
+output_dir=/home/ap/Documents/behavior_mode/outputs/2026-09-24/20-27-18_bmd_single_step_g2
+Pretraining one frozen BC policy shared by all training seeds...
+BC step=    0 loss=0.978687
+BC step= 4000 loss=0.225510
+BC step= 8000 loss=0.161122
+BC step=12000 loss=0.177359
+BC step=16000 loss=0.207526
+BC step=19999 loss=0.117472
+action_scale=0.051692
+BC prior: SR=0.000 SR_M=0.000 mcf=0.00/4 H/logM=0.980 Hs/logM=nan radius=0.887
+
+Training seed 0
+result: SR=0.559 SR_M=0.397 mcf=0.00/4 H/logM=0.740 Hs/logM=0.690 radius=0.854
+
+Aggregate: SR=0.559 SR_M=0.397 mcf=0.00/4 H/logM=0.740 Hs/logM=0.690 radius=0.854
+
+```
+
+
+## function anchor g0
+
+```text
+
+(behavior-mode) (base) ap@ap:~/Documents/behavior_mode$ uv run python train.py \
+  run=diagnostic \
+  experiment=plain_dsrl \
+  policy=single_step \
+  policy.bc_steps=20000 \
+  landscape=g0 \
+  landscape.name=g5 \
+  landscape.rotation=0.1375710828025018 \
+  +experiment.dsrl_anchor_type=functional \
+  +experiment.dsrl_anchor_coef=1.0 \
+  +experiment.dsrl_anchor_seed=20260824 \
+  +experiment.dsrl_anchor_draws=2
+output_dir=/home/ap/Documents/behavior_mode/outputs/2026-09-24/21-13-39_plain_dsrl_single_step_g5
+Pretraining one frozen BC policy shared by all training seeds...
+BC step=    0 loss=0.978687
+BC step= 4000 loss=0.225510
+BC step= 8000 loss=0.161122
+BC step=12000 loss=0.177359
+BC step=16000 loss=0.207526
+BC step=19999 loss=0.117472
+action_scale=0.051692
+BC prior: SR=0.871 SR_M=0.881 mcf=4.00/4 H/logM=0.973 Hs/logM=0.981 radius=0.762
+
+Training seed 0
+result: SR=0.984 SR_M=0.985 mcf=4.00/4 H/logM=0.958 Hs/logM=0.959 radius=0.754
+
+Training seed 1
+result: SR=0.992 SR_M=0.988 mcf=4.00/4 H/logM=0.942 Hs/logM=0.940 radius=0.756
+
+Training seed 2
+result: SR=0.977 SR_M=0.973 mcf=4.00/4 H/logM=0.940 Hs/logM=0.938 radius=0.754
+
+Aggregate: SR=0.984 SR_M=0.982 mcf=4.00/4 H/logM=0.947 Hs/logM=0.945 radius=0.755
+
+```
+
+
+
