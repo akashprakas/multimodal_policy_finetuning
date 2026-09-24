@@ -1,5 +1,5 @@
 name: diagnostic
-training_seeds: [0]
+training_seeds: [0,1,2]
 evaluation_seeds: [777]
 max_n_demonstrations: null
 max_bc_steps: null
