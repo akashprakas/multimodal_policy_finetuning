@@ -1,0 +1,18 @@
+# Locked DSRL radius-shift cell from four_goal_bmd_reproduction.
+# BC is pretrained at radius 1.0 and rotation 0. Fine-tuning/evaluation use
+# radius 1.16 and should be run with landscape=g5.
+name: dsrl_v1
+goal_radius: 1.16
+success_distance: null
+
+# Recorded references for analysis. These values do not affect training.
+identity_sr: 0.551
+identity_sr_m: 0.544
+identity_h_succ_norm: 0.963
+pre_rl_sr: 0.579
+pre_rl_sr_m: 0.523
+expert_sr: 1.0
+expert_sr_m: 1.0
+shifted_bc_sr: 0.777
+shifted_bc_sr_m: 0.773
+shifted_bc_mcf: 2.0

@@ -13,6 +13,7 @@ from four_goal_bmd.envs.four_goals import make_goal_centers
 from four_goal_bmd.evaluation import evaluate_policy
 from four_goal_bmd.factory import pretrain_frozen_policy
 from four_goal_bmd.metrics import aggregate_metrics, format_metrics
+from four_goal_bmd.task_shift import finetuning_environment
 from four_goal_bmd.utils import configure_cpu, metadata, save_json, save_resolved_config
 
 
@@ -34,9 +35,16 @@ def main(cfg: DictConfig) -> None:
     if cfg.logging.save_checkpoints:
         save_bc_checkpoint(output_dir / "bc_checkpoint.pt", frozen_policy, cfg)
 
+    # Apply the task shift only after BC has been trained on the original goals.
+    environment_cfg = finetuning_environment(cfg)
+    if cfg.shift.goal_radius is not None or cfg.shift.success_distance is not None:
+        print(
+            f"task shift: goal_radius={environment_cfg.goal_radius} "
+            f"success_distance={environment_cfg.success_distance}"
+        )
     goal_centers = make_goal_centers(
-        n_goals=cfg.environment.n_goals,
-        radius=cfg.environment.goal_radius,
+        n_goals=environment_cfg.n_goals,
+        radius=environment_cfg.goal_radius,
         rotation=cfg.landscape.rotation,
     )
     bc_evaluations = []
@@ -45,7 +53,7 @@ def main(cfg: DictConfig) -> None:
             evaluate_policy(
                 frozen_policy=frozen_policy,
                 goal_centers=goal_centers,
-                environment_cfg=cfg.environment,
+                environment_cfg=environment_cfg,
                 policy_cfg=cfg.policy,
                 n_episodes=cfg.evaluation.n_episodes,
                 evaluation_seed=evaluation_seed,
@@ -61,7 +69,7 @@ def main(cfg: DictConfig) -> None:
         result = train_bmd(
             frozen_policy=frozen_policy,
             goal_centers=goal_centers,
-            environment_cfg=cfg.environment,
+            environment_cfg=environment_cfg,
             experiment_cfg=cfg.experiment,
             policy_cfg=cfg.policy,
             seed=training_seed,
@@ -78,7 +86,7 @@ def main(cfg: DictConfig) -> None:
                 steering_policy=result.steering_policy,
                 k_latent=cfg.experiment.k_latent,
                 goal_centers=goal_centers,
-                environment_cfg=cfg.environment,
+                environment_cfg=environment_cfg,
                 policy_cfg=cfg.policy,
                 n_episodes=cfg.evaluation.n_episodes,
                 evaluation_seed=evaluation_seed,
@@ -111,6 +119,13 @@ def main(cfg: DictConfig) -> None:
         "experiment": cfg.experiment.name,
         "policy": cfg.policy.name,
         "landscape": cfg.landscape.name,
+        "shift": cfg.shift.name,
+        "task": {
+            "bc_goal_radius": float(cfg.environment.goal_radius),
+            "finetuning_goal_radius": float(environment_cfg.goal_radius),
+            "success_distance": float(environment_cfg.success_distance),
+            "goal_centers": goal_centers.tolist(),
+        },
         "training_seeds": [int(seed) for seed in cfg.seeds.training],
         "evaluation_seeds": [int(seed) for seed in cfg.seeds.evaluation],
         "bc": {"mean": bc_mean, "std": bc_std, "evaluations": bc_evaluations},

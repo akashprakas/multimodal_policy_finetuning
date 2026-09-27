@@ -1,0 +1,4 @@
+# Default: BC pretraining, RL fine-tuning, and evaluation use the same task radius.
+name: none
+goal_radius: null
+success_distance: null

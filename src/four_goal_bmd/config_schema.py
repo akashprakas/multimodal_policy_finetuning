@@ -54,6 +54,12 @@ def validate_config(cfg: DictConfig) -> None:
         raise ValueError("k_latent must be positive.")
     if cfg.experiment.inference_steps < 1:
         raise ValueError("inference_steps must be positive.")
+    shift = cfg.get("shift", None)
+    if shift is not None:
+        if shift.get("goal_radius") is not None and shift.goal_radius <= 0:
+            raise ValueError("shift.goal_radius must be positive when provided.")
+        if shift.get("success_distance") is not None and shift.success_distance <= 0:
+            raise ValueError("shift.success_distance must be positive when provided.")
     if not cfg.seeds.training or not cfg.seeds.evaluation:
         raise ValueError("At least one training and evaluation seed is required.")
 
