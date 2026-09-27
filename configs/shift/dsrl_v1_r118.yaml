@@ -1,0 +1,14 @@
+# Robustness cell. Select coefficients on dsrl_v1, then reuse them unchanged here.
+name: dsrl_v1_r118
+goal_radius: 1.18
+success_distance: null
+identity_sr: 0.461
+identity_sr_m: 0.462
+identity_h_succ_norm: 0.974
+pre_rl_sr: 0.496
+pre_rl_sr_m: 0.428
+expert_sr: 1.0
+expert_sr_m: 1.0
+shifted_bc_sr: 0.785
+shifted_bc_sr_m: 0.779
+shifted_bc_mcf: 2.0

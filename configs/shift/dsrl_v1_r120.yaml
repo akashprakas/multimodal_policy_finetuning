@@ -1,0 +1,15 @@
+# Harder robustness cell; the identity SR (0.391) is marginally below the
+# preregistered [0.40, 0.60] admission band.
+name: dsrl_v1_r120
+goal_radius: 1.20
+success_distance: null
+identity_sr: 0.391
+identity_sr_m: 0.386
+identity_h_succ_norm: 0.965
+pre_rl_sr: 0.419
+pre_rl_sr_m: 0.355
+expert_sr: 1.0
+expert_sr_m: 1.0
+shifted_bc_sr: 0.777
+shifted_bc_sr_m: 0.770
+shifted_bc_mcf: 1.0

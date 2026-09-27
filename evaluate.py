@@ -11,6 +11,7 @@ from four_goal_bmd.config_schema import apply_run_profile
 from four_goal_bmd.envs.four_goals import make_goal_centers
 from four_goal_bmd.evaluation import evaluate_policy
 from four_goal_bmd.metrics import aggregate_metrics, format_metrics
+from four_goal_bmd.task_shift import finetuning_environment
 from four_goal_bmd.utils import configure_cpu, save_json
 
 
@@ -23,9 +24,10 @@ def main(cfg: DictConfig) -> None:
     saved_cfg, frozen_policy, steering_policy, _, _, payload = load_training_checkpoint(
         cfg.checkpoint_path
     )
+    environment_cfg = finetuning_environment(saved_cfg)
     goal_centers = make_goal_centers(
-        saved_cfg.environment.n_goals,
-        saved_cfg.environment.goal_radius,
+        environment_cfg.n_goals,
+        environment_cfg.goal_radius,
         saved_cfg.landscape.rotation,
     )
     evaluations = []
@@ -35,7 +37,7 @@ def main(cfg: DictConfig) -> None:
             steering_policy=steering_policy,
             k_latent=saved_cfg.experiment.k_latent,
             goal_centers=goal_centers,
-            environment_cfg=saved_cfg.environment,
+            environment_cfg=environment_cfg,
             policy_cfg=saved_cfg.policy,
             n_episodes=cfg.evaluation.n_episodes,
             evaluation_seed=evaluation_seed,
@@ -48,6 +50,8 @@ def main(cfg: DictConfig) -> None:
     result = {
         "checkpoint": str(Path(cfg.checkpoint_path).resolve()),
         "training_seed": payload["training_seed"],
+        "shift": saved_cfg.shift.name if saved_cfg.get("shift") is not None else None,
+        "goal_radius": float(environment_cfg.goal_radius),
         "mean": mean,
         "std": std,
         "evaluations": evaluations,

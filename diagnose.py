@@ -16,6 +16,7 @@ from four_goal_bmd.envs.four_goals import make_goal_centers
 from four_goal_bmd.evaluation import evaluate_policy
 from four_goal_bmd.factory import pretrain_frozen_policy
 from four_goal_bmd.metrics import format_metrics
+from four_goal_bmd.task_shift import finetuning_environment
 from four_goal_bmd.utils import configure_cpu, metadata, save_json, save_resolved_config
 
 
@@ -30,14 +31,17 @@ def main(cfg: DictConfig) -> None:
     frozen_policy, bc_history = pretrain_frozen_policy(cfg, verbose=True)
     print(f"action_scale={frozen_policy.action_scale:.6f}")
     save_json(output_dir / "bc_history.json", bc_history)
+    environment_cfg = finetuning_environment(cfg)
     goals = make_goal_centers(
-        cfg.environment.n_goals, cfg.environment.goal_radius, cfg.landscape.rotation
+        environment_cfg.n_goals,
+        environment_cfg.goal_radius,
+        cfg.landscape.rotation,
     )
 
     direct = evaluate_policy(
         frozen_policy,
         goals,
-        cfg.environment,
+        environment_cfg,
         cfg.policy,
         cfg.evaluation.n_episodes,
         cfg.seeds.evaluation[0],
@@ -51,7 +55,7 @@ def main(cfg: DictConfig) -> None:
     elif cfg.diagnostic.name == "grid_search":
         oracle_success = expert_replay(
             goals,
-            cfg.environment,
+            environment_cfg,
             cfg.policy,
             n_episodes=cfg.evaluation.n_episodes,
             seed=cfg.seeds.evaluation[0],
@@ -59,7 +63,7 @@ def main(cfg: DictConfig) -> None:
         reachability = grid_search_reachability(
             frozen_policy,
             goals,
-            cfg.environment,
+            environment_cfg,
             cfg.policy,
             cfg.diagnostic.grid_size,
             cfg.diagnostic.w_limit,
@@ -77,7 +81,7 @@ def main(cfg: DictConfig) -> None:
         result["rows"] = hold_noise_probe(
             frozen_policy,
             goals,
-            cfg.environment,
+            environment_cfg,
             cfg.policy,
             list(cfg.diagnostic.hold_lengths),
             cfg.diagnostic.n_episodes,
