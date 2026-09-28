@@ -141,7 +141,6 @@ def ppo_update(
                     states=observations[indices],
                     latents=latents[indices],
                     generator=anchor_generator,
-                    n_draws=int(cfg.get("dsrl_anchor_draws", 2)),
                 )
                 anchor_values.append(float(anchor_term.detach()))
                 total_loss = total_loss + anchor_coef * anchor_term

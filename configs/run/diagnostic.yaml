@@ -6,6 +6,7 @@ max_bc_steps: null
 max_total_epochs: null
 max_warmup_epochs: null
 max_inference_steps: null
+max_flow_steps: null
 max_n_envs: null
 max_ppo_batch_size: null
 n_evaluation_episodes: 256

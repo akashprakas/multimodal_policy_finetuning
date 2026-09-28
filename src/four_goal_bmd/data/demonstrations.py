@@ -11,6 +11,8 @@ class DemonstrationDataset:
     goal_indices: np.ndarray
     action_scale: float
     chunk_length: int
+    validation_states: torch.Tensor | None = None
+    validation_action_targets: torch.Tensor | None = None
 
     def sample(self, batch_size: int) -> tuple[torch.Tensor, torch.Tensor]:
         indices = torch.randint(0, self.states.shape[0], (batch_size,))
@@ -24,10 +26,13 @@ def generate_demonstrations(
     chunk_length: int,
     seed: int,
     action_noise_std: float = 0.01,
+    validation_fraction: float = 0.0,
 ) -> DemonstrationDataset:
     """Generate the procedural expert used by the historical experiment."""
     if episode_steps % chunk_length != 0:
         raise ValueError("episode_steps must be divisible by chunk_length.")
+    if not 0.0 <= validation_fraction < 1.0:
+        raise ValueError("validation_fraction must lie in [0, 1).")
     rng = np.random.default_rng(seed)
     goal_indices = rng.integers(0, len(goal_centers), size=n_demonstrations)
     targets = goal_centers[goal_indices]
@@ -54,9 +59,28 @@ def generate_demonstrations(
         np.stack(action_chunks, axis=1).reshape(-1, chunk_length * 2).astype(np.float32)
     )
     action_scale = float(targets_flat.std())
+    state_tensor = torch.from_numpy(states)
+    normalized_targets = torch.from_numpy(targets_flat) / action_scale
+    n_validation = int(round(validation_fraction * n_demonstrations))
+    if validation_fraction > 0.0 and n_validation < 1:
+        raise ValueError(
+            "validation_fraction is too small to hold out one demonstration."
+        )
+    if n_validation:
+        n_chunks = episode_steps // chunk_length
+        split = (n_demonstrations - n_validation) * n_chunks
+        return DemonstrationDataset(
+            states=state_tensor[:split],
+            action_targets=normalized_targets[:split],
+            goal_indices=goal_indices[: n_demonstrations - n_validation],
+            action_scale=action_scale,
+            chunk_length=chunk_length,
+            validation_states=state_tensor[split:],
+            validation_action_targets=normalized_targets[split:],
+        )
     return DemonstrationDataset(
-        states=torch.from_numpy(states),
-        action_targets=torch.from_numpy(targets_flat) / action_scale,
+        states=state_tensor,
+        action_targets=normalized_targets,
         goal_indices=goal_indices,
         action_scale=action_scale,
         chunk_length=chunk_length,

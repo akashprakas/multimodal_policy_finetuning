@@ -3,10 +3,15 @@ from __future__ import annotations
 from pathlib import Path
 
 import hydra
+import torch
+from four_goal_bmd.algorithms.reinflow import make_flow_actor
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig
 
-from four_goal_bmd.checkpointing import load_training_checkpoint
+from four_goal_bmd.checkpointing import (
+    load_reinflow_checkpoint,
+    load_training_checkpoint,
+)
 from four_goal_bmd.config_schema import apply_run_profile
 from four_goal_bmd.envs.four_goals import make_goal_centers
 from four_goal_bmd.evaluation import evaluate_policy
@@ -21,10 +26,29 @@ def main(cfg: DictConfig) -> None:
     apply_run_profile(cfg)
     if not cfg.checkpoint_path:
         raise ValueError("Set checkpoint_path=/path/to/seed_xxx/checkpoint.pt")
-    saved_cfg, frozen_policy, steering_policy, _, _, payload = load_training_checkpoint(
-        cfg.checkpoint_path
+    payload_header = torch.load(
+        cfg.checkpoint_path, map_location="cpu", weights_only=False
     )
-    environment_cfg = finetuning_environment(saved_cfg)
+    if payload_header.get("backend") == "reinflow":
+        saved_cfg, actor, _, action_scale, payload = load_reinflow_checkpoint(
+            cfg.checkpoint_path
+        )
+        environment_cfg = finetuning_environment(saved_cfg)
+        frozen_policy = make_flow_actor(
+            actor,
+            action_scale,
+            environment_cfg,
+            saved_cfg.policy,
+            saved_cfg.experiment,
+        )
+        steering_policy = None
+        k_latent = None
+    else:
+        saved_cfg, frozen_policy, steering_policy, _, _, payload = (
+            load_training_checkpoint(cfg.checkpoint_path)
+        )
+        environment_cfg = finetuning_environment(saved_cfg)
+        k_latent = saved_cfg.experiment.k_latent
     goal_centers = make_goal_centers(
         environment_cfg.n_goals,
         environment_cfg.goal_radius,
@@ -35,7 +59,7 @@ def main(cfg: DictConfig) -> None:
         row = evaluate_policy(
             frozen_policy=frozen_policy,
             steering_policy=steering_policy,
-            k_latent=saved_cfg.experiment.k_latent,
+            k_latent=k_latent,
             goal_centers=goal_centers,
             environment_cfg=environment_cfg,
             policy_cfg=saved_cfg.policy,

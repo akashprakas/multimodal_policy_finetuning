@@ -3,6 +3,7 @@ from __future__ import annotations
 import torch
 
 from four_goal_bmd.algorithms.diffusion_bc import train_diffusion_bc
+from four_goal_bmd.algorithms.flow_bc import train_flow_bc
 from four_goal_bmd.data.demonstrations import generate_demonstrations
 from four_goal_bmd.envs.four_goals import make_goal_centers
 from four_goal_bmd.models.diffusion import (
@@ -10,6 +11,7 @@ from four_goal_bmd.models.diffusion import (
     DiffusionModel,
     FrozenDiffusionPolicy,
 )
+from four_goal_bmd.models.flow import FlowModel, build_velocity_network
 
 
 def build_diffusion_model(cfg) -> DiffusionModel:
@@ -68,3 +70,70 @@ def pretrain_frozen_policy(cfg, verbose: bool = True):
         log_every=max(1, cfg.policy.bc_steps // 5) if verbose else 0,
     )
     return build_frozen_policy(model, dataset.action_scale, cfg), history
+
+
+def build_flow_model(cfg) -> FlowModel:
+    output_dim = cfg.environment.action_dim * cfg.policy.chunk_length
+    network = build_velocity_network(
+        output_dim=output_dim,
+        condition_dim=cfg.environment.observation_dim,
+        time_embedding_dim=cfg.policy.time_embedding_dim,
+        hidden_dims=cfg.policy.network_dims,
+    )
+    return FlowModel(
+        network=network,
+        output_dim=output_dim,
+        flow_steps=cfg.experiment.flow_steps,
+        act_limit=cfg.experiment.act_limit,
+        time_scale=cfg.experiment.time_scale,
+        sample_t_type=cfg.experiment.sample_t_type,
+        device=cfg.device,
+    )
+
+
+def pretrain_flow_policy(cfg, verbose: bool = True):
+    """Train a flow BC model on the original, unshifted demonstrations."""
+    training_goals = make_goal_centers(
+        n_goals=cfg.environment.n_goals,
+        radius=cfg.environment.goal_radius,
+        rotation=0.0,
+    )
+    dataset = generate_demonstrations(
+        goal_centers=training_goals,
+        n_demonstrations=cfg.policy.n_demonstrations,
+        episode_steps=cfg.policy.episode_steps,
+        chunk_length=cfg.policy.chunk_length,
+        seed=cfg.seeds.bc,
+        action_noise_std=cfg.policy.expert_action_noise_std,
+        validation_fraction=cfg.experiment.bc_validation_fraction,
+    )
+    maximum_target = float(dataset.action_targets.abs().max())
+    if maximum_target >= cfg.experiment.act_limit:
+        raise ValueError(
+            f"act_limit={cfg.experiment.act_limit} would clip training data; "
+            f"maximum normalized target is {maximum_target:.4f}."
+        )
+
+    torch.manual_seed(42)
+    model = build_flow_model(cfg)
+    report = train_flow_bc(
+        model=model,
+        dataset=dataset,
+        training_steps=cfg.policy.bc_steps,
+        batch_size=cfg.policy.bc_batch_size,
+        learning_rate=cfg.policy.bc_learning_rate,
+        validation_every=cfg.experiment.bc_validation_every,
+        cosine_schedule=cfg.experiment.bc_cosine_schedule,
+        log_every=max(1, cfg.policy.bc_steps // 5) if verbose else 0,
+    )
+    tail = report["train_loss"][-max(1, len(report["train_loss"]) // 20) :]
+    report["n_parameters"] = sum(p.numel() for p in model.parameters())
+    report["max_abs_normalized_target"] = maximum_target
+    report["final_train_loss"] = float(sum(tail) / len(tail))
+    if report["validation"]:
+        final_validation = report["validation"][-1]["loss"]
+        report["final_validation_loss"] = final_validation
+        report["validation_over_train"] = final_validation / max(
+            report["final_train_loss"], 1e-12
+        )
+    return model, dataset.action_scale, report

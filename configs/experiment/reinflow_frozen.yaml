@@ -1,0 +1,80 @@
+# ReinFlow-plain: task reward only, no latent, no MI reward.
+# The single-factor analogue of plain_dsrl.yaml, differing only in WHAT is
+# optimized -- the velocity field and its noise head, rather than a steering
+# distribution over a frozen decoder's input noise.
+name: reinflow_frozen
+backend: reinflow
+k_latent: 1
+
+# --- flow policy and denoising chain ----------------------------------------
+flow_steps: 4                      # K; upstream Hopper uses 4
+time_scale: null                   # null -> flow_steps; see models/flow.py
+sample_t_type: uniform             # uniform | logitnormal | beta
+act_limit: 3.0                     # normalized action space
+denoised_clip_value: 3.0           # MUST equal act_limit
+clip_intermediate_actions: true
+
+# --- learnable bounded noise ------------------------------------------------
+# Upstream Hopper uses [0.10, 0.24] against an action half-width of 1 with
+# action std ~0.5, i.e. 0.2-0.5 sigma_data. Here sigma_data is exactly 1.0 by
+# construction, so [0.10, 0.40] reproduces the same relative exploration. It
+# also puts the effective x_0 perturbation sigma*sqrt(K) at 0.2-0.8 against a
+# unit-variance x_0, which is the range where sigma can influence mode
+# selection at all.
+sigma_min: 0.10
+sigma_max: 0.40
+min_sampling_std: 0.10             # MUST equal sigma_min
+randn_clip_value: 3.0
+noise_hidden_dims: [64, 64]
+noise_activation: tanh
+time_independent_noise: false
+noise_scheduler: none              # none | learn_decay
+learn_velocity_field: false
+learn_noise_head: false
+
+# --- log-probability conventions (fixed by the reference implementation) -----
+account_for_initial_stochasticity: true
+normalize_denoising_horizon: true
+normalize_action_dimension: true
+logprob_min: -1.0
+logprob_max: 1.0
+
+# --- PPO --------------------------------------------------------------------
+clip_ploss_coef: 0.01              # tight, because log-probs are normalized
+entropy_coef: 0.03
+value_coef: 0.5
+actor_lr: 0.0003                   # upstream 4.5e-5 targets 1e6-step runs
+critic_lr: 0.00065
+critic_dims: [64, 64]
+critic_warmup_epochs: 2
+n_envs: 64
+ppo_batch_size: 128
+ppo_update_epochs: 5
+gamma: 0.99
+gae_lambda: 0.95
+max_grad_norm: 1.0
+target_kl: 1.0
+ratio_sanity_tolerance: 0.0001
+
+# --- schedule ---------------------------------------------------------------
+total_epochs: 300
+warmup_epochs: 0
+curriculum: false
+intrinsic_scale: 0.0
+finetune_intrinsic_scale: 0.0
+environment_reward_scale: 1.0
+
+# --- behavior cloning -------------------------------------------------------
+bc_validation_fraction: 0.1
+bc_validation_every: 100
+bc_cosine_schedule: false
+
+# --- diagnostics ------------------------------------------------------------
+diagnostic_every: 10
+n_diagnostic_episodes: 128
+n_spread_samples: 256
+
+# --- drift anchor (preservation study). Inert by default. ---
+anchor_type: none                  # none | upstream | functional
+anchor_coef: 0.0                   # lambda
+anchor_seed: 20260823              # dedicated generator for anchor x_0 draws

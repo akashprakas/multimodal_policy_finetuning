@@ -6,6 +6,7 @@ max_bc_steps: 20
 max_total_epochs: 4
 max_warmup_epochs: 2
 max_inference_steps: 2
+max_flow_steps: 2
 max_n_envs: 16
 max_ppo_batch_size: 16
 n_evaluation_episodes: 64
