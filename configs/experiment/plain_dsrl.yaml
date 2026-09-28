@@ -32,5 +32,4 @@ target_kl: 1.0
 dsrl_anchor_type: none
 dsrl_anchor_coef: 0.0
 dsrl_anchor_seed: 20260824
-dsrl_anchor_draws: 2
 

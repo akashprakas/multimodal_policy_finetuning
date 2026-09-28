@@ -347,8 +347,7 @@ Aggregate: SR=0.559 SR_M=0.397 mcf=0.00/4 H/logM=0.740 Hs/logM=0.690 radius=0.85
   landscape.rotation=0.1375710828025018 \
   +experiment.dsrl_anchor_type=functional \
   +experiment.dsrl_anchor_coef=1.0 \
-  +experiment.dsrl_anchor_seed=20260824 \
-  +experiment.dsrl_anchor_draws=2
+  +experiment.dsrl_anchor_seed=20260824
 output_dir=/home/ap/Documents/behavior_mode/outputs/2026-09-24/21-13-39_plain_dsrl_single_step_g5
 Pretraining one frozen BC policy shared by all training seeds...
 BC step=    0 loss=0.978687

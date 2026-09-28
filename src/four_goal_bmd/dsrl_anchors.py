@@ -35,7 +35,6 @@ def dsrl_anchor_loss(
     states: torch.Tensor,
     latents: torch.Tensor,
     generator: torch.Generator | None = None,
-    n_draws: int = 2,
 ) -> torch.Tensor:
     """Behavior-level drift penalty for the steering policy.
 

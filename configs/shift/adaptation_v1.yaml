@@ -1,0 +1,40 @@
+# LOCKED adaptation-required testbed. Selected by the rule stated in
+# docs/ADAPTATION_TESTBED_PREREG.md before results were seen: the smallest shift
+# satisfying all six acceptance gates.
+#
+# BC is pretrained on goals at radius 1.0, rotation 0. Fine-tuning and evaluation
+# use goals at radius 1.22, rotation g5 (7.88 deg). Measured on dev seeds 0-2,
+# 256 episodes, with the same actor-initialization protocol training uses:
+#
+#   gate 1  pre-RL SR            0.598   in [0.40, 0.60]          PASS
+#   gate 2  pre-RL H_succ_norm   0.981   >= 0.90                  PASS
+#   gate 3  grid reachability      4/4   all four goals           PASS
+#   gate 4  per-goal balance      0.62   min/max >= 0.50          PASS
+#   gate 5  oracle SR            0.945   >= 0.90                  PASS
+#   gate 6  plain ReinFlow      SR 0.598 -> 1.000, H_succ 0.981 -> 0.006
+#                                        adapts AND collapses     PASS
+#
+# Radius 1.23 (pre-RL SR 0.543) and 1.24 (0.477) also pass all six and are the
+# preregistered alternates if 1.22 proves too easy.
+#
+# Note on the oracle: post-RL SR 1.000 EXCEEDS the oracle's 0.945, because a
+# collapsed policy specializing on one goal beats a mode-covering policy on raw
+# success. So the oracle is the ceiling for a MODE-COVERING policy, not an upper
+# bound on SR, and normalized adaptation gain G can exceed 1 by collapsing. G is
+# a necessary, not sufficient, condition -- always read it with the coverage
+# terms of the conjunction.
+name: adaptation_v1
+goal_radius: 1.22
+success_distance: null
+
+# Measured ceilings for this locked cell, used to normalize adaptation gain.
+# Oracle = a flow BC of identical architecture and budget trained on
+# demonstrations targeting the shifted, rotated goals (dev seeds, 256 episodes).
+# Both are recorded here so the normalizer is a committed artifact rather than a
+# number retyped into an analysis script.
+oracle_sr: 0.945
+oracle_sr_m: 0.946
+# Pre-RL reference for this cell, same actor-initialization protocol as training,
+# averaged over dev seeds 0-2.
+pre_rl_sr: 0.598
+pre_rl_sr_m: 0.594

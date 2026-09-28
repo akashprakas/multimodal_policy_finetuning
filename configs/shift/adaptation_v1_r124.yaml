@@ -1,0 +1,13 @@
+# Preregistered ALTERNATE of the locked cell, for robustness only. Never used for
+# coefficient selection. Carries its OWN measured oracle reference: reusing the
+# radius-1.22 normalizer would make G_M wrong here.
+#
+# Oracle: flow BC of identical architecture and budget trained on demonstrations
+# targeting the shifted, rotated goals at this radius (dev seeds, 256 episodes).
+name: adaptation_v1_r124
+goal_radius: 1.24
+success_distance: null
+oracle_sr: 0.941
+oracle_sr_m: 0.944
+pre_rl_sr: 0.4766
+pre_rl_sr_m: 0.4724

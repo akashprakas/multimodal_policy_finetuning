@@ -31,6 +31,3 @@ torchvision = { index = "pytorch-cu129" }
 [[tool.uv.index]]
 name = "pytorch-cu129"
 url = "https://download.pytorch.org/whl/cu129"
-
-[tool.uv]
-http-timeout = 300
