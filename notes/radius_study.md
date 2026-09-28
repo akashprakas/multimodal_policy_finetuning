@@ -1,3 +1,15 @@
+# Functional Anchoring Under a Radius Shift
+
+## Experimental protocol
+
+All commands were run from the repository root with `uv run python train.py`.
+The development runs use training seeds 0–2, 256 evaluation episodes, and an
+attempt floor of 26. Final runs use held-out training seeds 3–10, 1024 evaluation
+episodes, and an attempt floor of 103. The BC policy is trained on unrotated goals
+at radius 1.0; `landscape=g5 shift=dsrl_v1` applies rotation 0.137571 radians and
+radius 1.16 only during RL fine-tuning and evaluation. Every command used to
+produce a result is included immediately before that result.
+
 The study ran correctly and strongly reproduces the functional-anchor result. All histories completed without NaNs, the configurations are consistent, and the held-out evaluation uses 8 seeds × 1024 episodes with the correct 103-attempt floor.
 
 ## Main conclusion
@@ -27,6 +39,21 @@ Current repository:   SR=0.964, SR_M=0.963
 ---
 
 # 1. Lambda development sweep
+
+```bash
+uv run python train.py -m \
+  run=diagnostic \
+  run.n_evaluation_episodes=256 \
+  evaluation.min_attempts=26 \
+  policy=single_step_matched \
+  experiment=plain_dsrl \
+  landscape=g5 \
+  shift=dsrl_v1 \
+  experiment.dsrl_anchor_type=functional \
+  experiment.dsrl_anchor_coef=0.0,0.3,0.5,0.7,1.0,1.5,3.0 \
+  hydra.sweep.dir='multirun/radius_shift/lambda_dev' \
+  'hydra.sweep.subdir=lambda_${experiment.dsrl_anchor_coef}'
+```
 
 Results from [lambda_dev](/local/mnt/workspace/akasprak/cc/papers/01_mylearn/behavior_mode/multirun/radius_shift/lambda_dev/multirun.yaml):
 
@@ -60,6 +87,14 @@ The held-out run confirms λ=1 was not overfit to development seeds.
 
 # 2. Initialized actor
 
+```bash
+uv run python train.py \
+  run=final run.n_evaluation_episodes=1024 evaluation.min_attempts=103 \
+  policy=single_step_matched experiment=plain_dsrl landscape=g5 shift=dsrl_v1 \
+  experiment.total_epochs=1 experiment.steering_lr=0.0 \
+  hydra.run.dir='outputs/radius_shift/final_initialized_actor'
+```
+
 [Result](/local/mnt/workspace/akasprak/cc/papers/01_mylearn/behavior_mode/outputs/radius_shift/final_initialized_actor/summary.json):
 
 ```text
@@ -84,6 +119,13 @@ So it achieves approximately 92% of the possible improvement between initializat
 
 # 3. Plain DSRL
 
+```bash
+uv run python train.py \
+  run=final run.n_evaluation_episodes=1024 evaluation.min_attempts=103 \
+  policy=single_step_matched experiment=plain_dsrl landscape=g5 shift=dsrl_v1 \
+  hydra.run.dir='outputs/radius_shift/final_plain_dsrl'
+```
+
 [Result](/local/mnt/workspace/akasprak/cc/papers/01_mylearn/behavior_mode/outputs/radius_shift/final_plain_dsrl/summary.json):
 
 ```text
@@ -105,6 +147,14 @@ This is the clearest baseline in the study:
 ---
 
 # 4. K=8 capacity without MI
+
+```bash
+uv run python train.py \
+  run=final run.n_evaluation_episodes=1024 evaluation.min_attempts=103 \
+  policy=single_step_matched experiment=plain_dsrl experiment.k_latent=8 \
+  landscape=g5 shift=dsrl_v1 \
+  hydra.run.dir='outputs/radius_shift/final_k8_capacity_only'
+```
 
 [Result](/local/mnt/workspace/akasprak/cc/papers/01_mylearn/behavior_mode/outputs/radius_shift/final_k8_capacity_only/summary.json):
 
@@ -128,6 +178,14 @@ A latent becomes useful only when training provides a reason for different laten
 ---
 
 # 5. BMD without MI
+
+```bash
+uv run python train.py \
+  run=final run.n_evaluation_episodes=1024 evaluation.min_attempts=103 \
+  policy=single_step_matched experiment=bmd landscape=g5 shift=dsrl_v1 \
+  experiment.intrinsic_scale=0.0 experiment.finetune_intrinsic_scale=0.0 \
+  hydra.run.dir='outputs/radius_shift/final_bmd_no_mi'
+```
 
 [Result](/local/mnt/workspace/akasprak/cc/papers/01_mylearn/behavior_mode/outputs/radius_shift/final_bmd_no_mi/summary.json):
 
@@ -167,6 +225,13 @@ This is strong evidence that BMD’s benefit is coming from the MI reward—not 
 ---
 
 # 6. Full BMD
+
+```bash
+uv run python train.py \
+  run=final run.n_evaluation_episodes=1024 evaluation.min_attempts=103 \
+  policy=single_step_matched experiment=bmd landscape=g5 shift=dsrl_v1 \
+  hydra.run.dir='outputs/radius_shift/final_bmd'
+```
 
 [Result](/local/mnt/workspace/akasprak/cc/papers/01_mylearn/behavior_mode/outputs/radius_shift/final_bmd/summary.json):
 
@@ -209,6 +274,14 @@ BMD still provides addressable modes through `z`; the functional anchor preserve
 
 # 7. Functional anchor λ=1
 
+```bash
+uv run python train.py \
+  run=final run.n_evaluation_episodes=1024 evaluation.min_attempts=103 \
+  policy=single_step_matched experiment=plain_dsrl landscape=g5 shift=dsrl_v1 \
+  experiment.dsrl_anchor_type=functional experiment.dsrl_anchor_coef=1.0 \
+  hydra.run.dir='outputs/radius_shift/final_functional_lambda_1'
+```
+
 [Result](/local/mnt/workspace/akasprak/cc/papers/01_mylearn/behavior_mode/outputs/radius_shift/final_functional_lambda_1/summary.json):
 
 ```text
@@ -241,6 +314,17 @@ The anchor therefore does not simply freeze the original behavior. It permits en
 
 ### Radius 1.18
 
+The development-selected λ=1.0 is reused without retuning.
+
+```bash
+uv run python train.py \
+  run=final run.n_evaluation_episodes=1024 evaluation.min_attempts=103 \
+  policy=single_step_matched experiment=plain_dsrl landscape=g5 \
+  shift=dsrl_v1_r118 \
+  experiment.dsrl_anchor_type=functional experiment.dsrl_anchor_coef=1.0 \
+  hydra.run.dir='outputs/radius_shift/robustness_r118'
+```
+
 [Result](/local/mnt/workspace/akasprak/cc/papers/01_mylearn/behavior_mode/outputs/radius_shift/robustness_r118/summary.json):
 
 Seven seeds pass the floored 4/4 criterion. Seed 9 reports 3/4 only because one mode has 91 attempts, below the required 103:
@@ -253,6 +337,17 @@ per-mode SR: [0.945, 0.948, 0.969, 0.947]
 All four modes are actually competent. This is a visitation-balance/floor failure, not mode failure.
 
 ### Radius 1.20
+
+The same λ=1.0 is again reused without retuning.
+
+```bash
+uv run python train.py \
+  run=final run.n_evaluation_episodes=1024 evaluation.min_attempts=103 \
+  policy=single_step_matched experiment=plain_dsrl landscape=g5 \
+  shift=dsrl_v1_r120 \
+  experiment.dsrl_anchor_type=functional experiment.dsrl_anchor_coef=1.0 \
+  hydra.run.dir='outputs/radius_shift/robustness_r120'
+```
 
 [Result](/local/mnt/workspace/akasprak/cc/papers/01_mylearn/behavior_mode/outputs/radius_shift/robustness_r120/summary.json):
 
@@ -270,6 +365,21 @@ That is strong evidence that the result is not specific to radius 1.16.
 ---
 
 # 9. BC quality study
+
+```bash
+uv run python train.py -m \
+  run=diagnostic \
+  evaluation.min_attempts=26 \
+  policy=single_step_matched \
+  policy.bc_steps=2000,10000,20000 \
+  experiment=plain_dsrl \
+  landscape=g5 \
+  shift=dsrl_v1 \
+  experiment.dsrl_anchor_type=functional \
+  experiment.dsrl_anchor_coef=1.0 \
+  hydra.sweep.dir='multirun/radius_shift/bc_quality' \
+  'hydra.sweep.subdir=bc_${policy.bc_steps}'
+```
 
 | BC steps | BC SR | BC SR_M | Anchored SR | Anchored SR_M | mcf |
 |---:|---:|---:|---:|---:|---:|
