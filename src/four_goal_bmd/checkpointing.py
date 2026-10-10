@@ -23,6 +23,38 @@ def save_bc_checkpoint(path: Path, frozen_policy, cfg: DictConfig) -> None:
     )
 
 
+def save_flow_bc_checkpoint(path: Path, model, action_scale: float, cfg: DictConfig) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(
+        {
+            "format_version": 1,
+            "backend": "reinflow",
+            "config": OmegaConf.to_container(cfg, resolve=True),
+            "model_state": model.state_dict(),
+            "action_scale": action_scale,
+        },
+        path,
+    )
+
+
+def save_reinflow_checkpoint(
+    path: Path, result, action_scale: float, cfg: DictConfig, training_seed: int
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(
+        {
+            "format_version": 1,
+            "backend": "reinflow",
+            "config": OmegaConf.to_container(cfg, resolve=True),
+            "training_seed": training_seed,
+            "action_scale": action_scale,
+            "actor_state": result.actor.state_dict(),
+            "critic_state": result.critic.state_dict(),
+        },
+        path,
+    )
+
+
 def save_training_checkpoint(
     path: Path,
     frozen_policy,
@@ -48,6 +80,8 @@ def save_training_checkpoint(
 
 def load_training_checkpoint(path: str | Path):
     payload = torch.load(path, map_location="cpu", weights_only=False)
+    if payload.get("backend") == "reinflow":
+        raise ValueError(f"{path} is a ReinFlow checkpoint.")
     cfg = OmegaConf.create(payload["config"])
     model = build_diffusion_model(cfg)
     model.load_state_dict(payload["bc_model_state"])
@@ -78,3 +112,25 @@ def load_training_checkpoint(path: str | Path):
     critic.load_state_dict(payload["critic_state"])
     inference_model.load_state_dict(payload["inference_state"])
     return cfg, frozen_policy, steering_policy, critic, inference_model, payload
+
+
+def load_reinflow_checkpoint(path: str | Path):
+    from four_goal_bmd.algorithms.reinflow import build_actor_from_bc
+    from four_goal_bmd.factory import build_flow_model
+
+    payload = torch.load(path, map_location="cpu", weights_only=False)
+    if payload.get("backend") != "reinflow":
+        raise ValueError(f"{path} is not a ReinFlow checkpoint.")
+    cfg = OmegaConf.create(payload["config"])
+    actor = build_actor_from_bc(
+        build_flow_model(cfg),
+        cfg.experiment,
+        condition_dim=cfg.environment.observation_dim,
+        time_embedding_dim=cfg.policy.time_embedding_dim,
+    )
+    actor.load_state_dict(payload["actor_state"])
+    critic = LatentCritic(
+        cfg.environment.observation_dim, 1, cfg.experiment.critic_dims
+    )
+    critic.load_state_dict(payload["critic_state"])
+    return cfg, actor, critic, payload["action_scale"], payload

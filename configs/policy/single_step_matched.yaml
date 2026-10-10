@@ -1,0 +1,17 @@
+# Same architecture and data as single_step, with the BC budget used by the
+# completed radius-shift study. At 2k steps the prior is too undertrained for a
+# clean functional-anchor preservation experiment.
+name: single_step_matched
+chunk_length: 1
+episode_steps: 14
+curriculum_start_units: 3
+denoising_steps: 10
+ddim_steps: 8
+time_embedding_dim: 8
+network_dims: [32, 32]
+denoised_clip_value: 1.5
+n_demonstrations: 2000
+bc_steps: 20000
+bc_batch_size: 128
+bc_learning_rate: 0.001
+expert_action_noise_std: 0.01

@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 import torch
 
+from four_goal_bmd.dsrl_anchors import dsrl_anchor_loss
 from four_goal_bmd.models.steering import InferenceModel, LatentCritic, SteeringPolicy
 
 
@@ -53,6 +54,8 @@ def ppo_update(
     inference_optimizer: torch.optim.Optimizer,
     rollout: dict[str, np.ndarray],
     cfg,
+    frozen_policy=None,
+    anchor_generator=None,
 ) -> dict[str, float]:
     time_steps, n_envs = rollout["r_tot"].shape
     latent_tensor = torch.from_numpy(rollout["z"]).long()
@@ -85,6 +88,7 @@ def ppo_update(
     policy_losses: list[float] = []
     value_losses: list[float] = []
     approximate_kls: list[float] = []
+    anchor_values: list[float] = []
     for _ in range(cfg.ppo_update_epochs):
         permutation = torch.randperm(total)
         n_batches = max(1, total // cfg.ppo_batch_size)
@@ -120,6 +124,26 @@ def ppo_update(
             total_loss = (
                 policy_loss + cfg.value_coef * value_loss - cfg.entropy_coef * entropy
             )
+
+            # Behavior-level anchor on the composite map eps -> D(s, w_psi(s,eps)).
+            # Additive and inert at coefficient 0, where the term is not built.
+            anchor_type = cfg.get("dsrl_anchor_type", "none")
+            anchor_coef = float(cfg.get("dsrl_anchor_coef", 0.0))
+            if anchor_type != "none" and anchor_coef > 0.0:
+                if frozen_policy is None:
+                    raise ValueError(
+                        f"dsrl_anchor_type={anchor_type} needs frozen_policy."
+                    )
+                anchor_term = dsrl_anchor_loss(
+                    anchor_type=anchor_type,
+                    steering_policy=steering_policy,
+                    frozen_policy=frozen_policy,
+                    states=observations[indices],
+                    latents=latents[indices],
+                    generator=anchor_generator,
+                )
+                anchor_values.append(float(anchor_term.detach()))
+                total_loss = total_loss + anchor_coef * anchor_term
 
             steering_optimizer.zero_grad()
             critic_optimizer.zero_grad()
@@ -160,9 +184,14 @@ def ppo_update(
         inference_optimizer.step()
         nll = float(inference_loss.item())
 
-    return {
+    update = {
         "policy_loss": float(np.mean(policy_losses)),
         "value_loss": float(np.mean(value_losses)),
         "approx_kl": float(np.mean(approximate_kls)),
         "nll": nll,
     }
+
+    if anchor_values:
+        update["dsrl_anchor_loss"] = float(np.mean(anchor_values))
+
+    return update

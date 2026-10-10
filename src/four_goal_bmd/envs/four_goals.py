@@ -31,6 +31,7 @@ class FourGoalEnv:
         reward_sigma: float = 0.25,
         success_distance: float = 0.30,
         seed: int = 0,
+        goal_weights: np.ndarray | None = None,
     ):
         """Initialize the environment.
 
@@ -44,6 +45,17 @@ class FourGoalEnv:
         """
         self.n_envs = n_envs
         self.goal_centers = goal_centers
+        self.goal_weights = (
+            None if goal_weights is None else np.asarray(goal_weights, dtype=np.float32)
+        )
+        if self.goal_weights is not None:
+            if self.goal_weights.shape != (len(goal_centers),):
+                raise ValueError(
+                    f"goal_weights must have shape {(len(goal_centers),)}, "
+                    f"got {self.goal_weights.shape}"
+                )
+            if (self.goal_weights <= 0).any():
+                raise ValueError("goal_weights must be strictly positive.")
         self.horizon = horizon
         self.reward_sigma = reward_sigma
         self.success_distance = success_distance
@@ -62,7 +74,10 @@ class FourGoalEnv:
     def reward(self, position: np.ndarray) -> np.ndarray:
         difference = position[:, None, :] - self.goal_centers[None, :, :]
         squared_distance = np.sum(difference**2, axis=-1)
-        return np.exp(-squared_distance / (2 * self.reward_sigma**2)).sum(axis=-1)
+        bumps = np.exp(-squared_distance / (2 * self.reward_sigma**2))
+        if self.goal_weights is None:
+            return bumps.sum(axis=-1)
+        return (bumps * self.goal_weights[None, :]).sum(axis=-1)
 
     def nearest_goal(self, position: np.ndarray) -> np.ndarray:
         difference = position[:, None, :] - self.goal_centers[None, :, :]
