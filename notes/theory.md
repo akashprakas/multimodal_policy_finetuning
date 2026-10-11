@@ -38,13 +38,8 @@ L2-SP (arXiv:1802.01483), and Laria et al. (arXiv:2410.14159) for diffusion.
    `x0 = 0` on the same setup.
 3. **A head-to-head comparison of mode preservation (anchor) and mode discovery (MI, BMD)**,
    including seed reliability and the dependence on BC quality.
-**Positioning statement.** The loss itself and its W₂ interpretation are not new, and
-ReinFlow already applies paired-output regularization online against a frozen old policy.
-Our plausible contribution is its extension to latent-noise steering, a controlled
-comparison with MI-based mode discovery, and a mechanistic mode-preservation analysis.
 
-**Blog note.** Say explicitly that our "upstream" arm matches the ReinFlow *code*
-(`x0 = 0`), not its Eq. 12.
+**Implementation distinction.** ReinFlow (Zhang et al., NeurIPS 2025) presents paired-output regularization in its Eq. 12, but its released implementation evaluates the penalty solely at `x0 = 0` (reproduced by the "upstream" baseline in this repository). In contrast, the functional anchor in this repository evaluates the paired penalty over fresh, sampled noise inputs $x_0 \sim \mathcal{N}(0, I)$ across the rollout distribution.
 
 ---
 
@@ -338,93 +333,29 @@ Completed reports:
     hydra.run.dir=outputs/rotation_sweep/functional_g3
   ```
 
-The completed g2 study validates the predicted qualitative failure regime. It does not
-validate the full `ρ` scaling law. The following experiments would strengthen a paper but
-are not required for the narrower claims summarized above.
+The completed g2 study validates the predicted qualitative failure regime. Open questions and potential extensions to test include:
 
-### Test 1: retention against the bound (no retraining)
+### 1. Retention against the theoretical bound
 
-On the final checkpoints (`outputs/radius_shift/final_functional_lambda_1`,
-`outputs/reinflow_ablations/*`), sample states along rollouts and measure:
-
+On policy checkpoints, sample states along rollouts and measure:
 - the anchor loss `L(s)`;
 - the pointwise margin `Δ(ε)` from BC samples;
-- the observed switch rate `P(S)`. `retention_probe` in `flow_diagnostics.py` already
-  computes this for ReinFlow; a DSRL version is needed.
+- the observed switch rate `P(S)`.
 
-Plot the observed `P(S)` against `E[‖f_θ − f₀‖² / Δ(ε)²]`, excluding or explicitly
-regularizing zero-margin samples. The pointwise inequality must hold by construction; its
-tightness tells us whether it meaningfully explains preservation. Also compare the
-retention of plain, upstream, and functional runs.
+Plotting the observed `P(S)` against `E[‖f_θ − f₀‖² / Δ(ε)²]` can evaluate the empirical tightness of the pointwise bound and whether it quantitatively explains mode retention.
 
-### Test 2: rotation sweep (highest-priority missing figure)
+### 2. Full rotation scaling law
 
-Run the functional anchor (DSRL, λ = 1, 20k BC, seeds 0–2) at
-`φ ∈ {0, 5, 10, 15, 20, 25, 30, 38, 45}°` and plot mc@0.8 and Hs/logM against
-`ρ² = (2 sin(φ/2) / sin 45°)²`.
+Evaluating functional anchoring across a fine-grained grid of angular rotations $\phi \in [0^\circ, 45^\circ]$ to measure how mode coverage (`mcf` and $H_{\text{succ}}$) drops as the geometric proxy $\rho^2 = (2 \sin(\phi/2) / \sin 45^\circ)^2$ approaches 1.
 
-Prediction: preservation becomes harder as the endpoint proxy `ρ²` approaches 1. The
-location and sharpness of any transition are empirical questions.
+### 3. The λ working window as a function of displacement δ
 
-Also run plain DSRL and BMD at each angle. The expected pattern is that the anchor is best
-at small `ρ` and BMD is relatively better at large `ρ`, which motivates combining the two.
+Evaluating coarse $\lambda$ sweeps across multiple shift magnitudes ($\delta \in \{0.16, 0.18, 0.20, 0.24\}$) to test whether the upper stability threshold scales inversely with $\delta^2$, while tracking the anchor-to-PPO gradient norm ratio.
 
-### Test 3: the λ window against δ
+### 4. Noise-space vs. action-space trust regions
 
-Using the radius shift (δ = 0.16, 0.18, 0.20, 0.24), run a coarse λ sweep
-(0.3, 0.5, 0.7, 1, 1.5, 3, 5) on 3 seeds. Prediction: the upper threshold falls roughly as
-`1/δ²`, and the lower threshold stays about the same.
+In DSRL, contrasting the action-space functional anchor against an isotropic noise-space penalty $\lambda' \mathbb{E}[\|w - \epsilon\|^2]$ (as in LP-DS) to isolate the degree to which the decoder Jacobian metric $J^T J$ shapes the preservation landscape.
 
-At the same time, log the anchor/PPO gradient ratio and the gradient-clip fraction in
-`ppo.py`, so thresholds can be reported on a scale that is comparable across backends.
+### 5. Multi-seed mode recovery dynamics
 
-### Test 4: noise-space baseline (separates the method from LP-DS)
-
-In DSRL, replace the anchor with `λ' E‖w − ε‖²` (equivalently `‖μ‖² + d(σ − 1)²`), sweep
-λ', and compare the best result against the functional anchor.
-
-- If the noise-space penalty matches the functional anchor, the DSRL contribution reduces
-  to "a trust region to the prior works". The theory in Sections 4–6 still holds with `Δ`
-  measured in noise space.
-- If it falls short, Section 7.1 (decoder-shaped trust region) is supported.
-
-### Test 5: the mechanism behind reliability (optional)
-
-For BMD failure seeds 7 and 9 and for anchored runs, track per-mode mass over training.
-The prediction from Section 7.2: under the anchor, a mode that dips recovers; under BMD,
-it does not.
-
----
-
-## 10. Blog outline
-
-**Working title:** *Anchoring Where the Noise Goes: When Paired-Noise Regularization
-Preserves Modes in Generative Policy Fine-Tuning*
-
-1. **Hook.** RL fine-tuning reaches SR = 1.0 by collapsing onto one goal. Show endpoint
-   plots for the initialized actor against plain DSRL.
-2. **Background.** Noise steering (DSRL), velocity-field fine-tuning (ReinFlow), mode
-   discovery (BMD). Credit FQL, ReinFlow Eq. 12 and LP-DS up front.
-3. **Method.** One loss in two settings, with a figure showing the same ε sent through the
-   BC map and the fine-tuned map.
-4. **Results.**
-   - The ablation ladder: plain → K=8 → BMD without MI → BMD → anchor.
-   - Reliability counts: 8/8, 5/8, 0/8.
-   - ReinFlow: `x0 = 0` against paired-noise anchoring.
-   - Radius robustness and the g2 counterexample.
-5. **Why it works.** The exact one-step bound plus the trajectory-level geometric and
-   optimization hypotheses, clearly separated.
-6. **Where it breaks.** g2 (`ρ ≈ 1`) and weak BC, both as predictions of the theory.
-   Show that combining the anchor with MI reaches `3.88/4` modes on g2, versus `3.12/4`
-   for BMD alone.
-7. **Limitations.**
-   - A single 2D environment family, 8 seeds.
-   - Endpoint-level geometry used as a proxy for per-step actions.
-   - Metric caveats: SR_M is inflated by modes with few attempts, and mcf depends on the
-     attempt floor.
-
-**Claims to avoid:**
-- "a new loss";
-- "solves mode collapse";
-- "better than BMD" in general (say "more reliable on this task");
-- "optimal" or "proof" for any empirical result.
+Tracking per-mode probability mass trajectories over the course of training for BMD versus functional anchoring, investigating whether the functional anchor uniquely provides a restoring force that enables dipped modes to recover.

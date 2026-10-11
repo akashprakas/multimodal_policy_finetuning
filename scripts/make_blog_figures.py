@@ -1,4 +1,4 @@
-"""Figures for notes/blog_draft.md, drawn from the run summaries.
+"""Figures for research documentation and analysis, drawn from the run summaries.
 
 Run from the repo root:  uv run python scripts/make_blog_figures.py
 Writes PNG + SVG into notes/figures/. Coverage is the floored count

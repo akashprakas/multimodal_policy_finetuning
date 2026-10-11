@@ -1,6 +1,6 @@
 # Multimodal Policy Fine-Tuning
 
-An independent reimplementation and controlled study of [Behavioral Mode Discovery (BMD)](https://behav-mod-dis.github.io/) in a four-goal environment. The related blog can be found here https://akashprakas.github.io/akashBlog/posts/2026-03-30-mulitmodal-generative-rl-finetuning/
+An independent reimplementation and controlled study of [Behavioral Mode Discovery (BMD)](https://behav-mod-dis.github.io/) in a four-goal environment. **The related blog can be found here** https://akashprakas.github.io/akashBlog/posts/2026-03-30-mulitmodal-generative-rl-finetuning/
 
 The repository studies two complementary approaches to behavioral diversity during reinforcement-learning fine-tuning:
 

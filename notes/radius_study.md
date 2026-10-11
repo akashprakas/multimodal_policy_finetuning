@@ -399,13 +399,12 @@ The correct claim is:
 
 > Functional anchoring preserves and adapts useful multimodality already represented by the pretrained policy. It cannot manufacture missing behavioral competence.
 
-This BC-quality result is essential and should be included in the blog.
 
 ---
 
 # Overall conclusions
 
-Your experiments support four strong claims:
+The experiments support four strong conclusions:
 
 1. Reward-only RL fine-tuning causes complete mode collapse despite perfect task success.
 2. Latent capacity and curriculum without MI do not reliably prevent collapse.
@@ -420,35 +419,3 @@ Full BMD:          5/8 full-coverage seeds
 Plain DSRL:        0/8
 ```
 
-## Recommended next steps
-
-You already have enough for a strong research blog. I would avoid more broad hyperparameter sweeps.
-
-The highest-value remaining work is:
-
-1. Generate trajectory/end-point plots for representative seeds:
-
-   - initialized actor
-   - plain DSRL
-   - functional λ=1
-   - BMD
-   - BMD failure seed 8
-
-2. Add a functional-anchor mechanism analysis:
-
-   - paired-ε action retention;
-   - angular displacement from the identity policy;
-   - action magnitude/radial change;
-   - anchor loss through training.
-
-3. Run BMD at radii 1.18 and 1.20 only if you want to claim the anchor is more robust than BMD. Currently you can claim only that the anchor itself is robust.
-
-4. Run the BC-quality sweep for BMD only if you want to compare how anchor and BMD depend on BC quality.
-
-5. Optionally run the shifted BMD classifier-noise ablation. It is useful for explaining BMD failure modes, but not required for the central anchor result.
-
-The defensible blog title is now something like:
-
-> “Preventing Mode Collapse During Generative Policy Fine-Tuning with Functional Anchoring”
-
-The evidence supports “effective on a controlled multimodal adaptation problem,” but not yet a general claim across robotics environments or policy architectures.

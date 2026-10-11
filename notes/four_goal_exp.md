@@ -62,7 +62,7 @@ Aggregate: SR=0.948 SR_M=0.553 mcf=2.00/4 H/logM=0.539 Hs/logM=0.527 radius=0.76
 `r_tot` is *exactly* zero for the entire discovery phase (epochs 0-119) --
 `use_environment_reward=False` there, and `intrinsic_scale=0` zeroes the MI
 term too. So this is not "easier learning during a short-horizon discovery
-phase" (my first, wrong explanation) -- there is no learning signal at all
+phase" (initial hypothesis) -- there is no learning signal at all
 for the steering policy during discovery here. What *does* keep training
 during the reward-free window: the critic (regressing toward V~0, a
 well-defined if trivial target) and the classifier (NLL training runs
@@ -179,34 +179,22 @@ dropped to 2/4 at entropy=0.05 -- "more entropy" is not uniformly better.
 `H/logM` actually *decreases* slightly as entropy_coef rises (0.811 -> 0.793 ->
 0.781), the opposite of naive intuition -- entropy_coef regularizes the
 steering policy's own noise spread (`log_std`), not goal-assignment diversity
-directly; that's MI's job. Matches the guide's own framing (section 16):
+directly; that's MI's job. Matches the guide's own framing:
 entropy's documented benefit is reduced cross-seed variance, not a uniform
-boost to every metric's mean. `entropy_coef=0.1` run in progress, not yet
-logged.
-
-## Open questions / next steps
-
-- Confirm the classifier-NLL-during-idle-discovery hypothesis (row 5) by
-  checking `nll` in `history.json` across epochs 0-119 -- is it actually
-  falling despite the frozen policy, or flat?
-- Log the pending `entropy_coef=0.1` result once it finishes.
-- Full bridge still needs: re-ablate `environment_reward_scale` (row 7 of the
-  original 7-step plan), then repeat on landscape=g0 and policy=chunked.
+boost to every metric's mean.
 
 
-
-## plain dsrl
+## Plain DSRL Baseline Runs
 
 ### g2
 
 ```text
-
-behavior-mode) (base) ap@ap:~/Documents/behavior_mode$ uv run python train.py \
+uv run python train.py \
   run=diagnostic \
   experiment=plain_dsrl \
   policy=single_step \
   landscape=g2
-output_dir=/home/ap/Documents/behavior_mode/outputs/2026-09-24/21-18-45_plain_dsrl_single_step_g2
+output_dir=outputs/2026-09-24/21-18-45_plain_dsrl_single_step_g2
 Pretraining one frozen BC policy shared by all training seeds...
 BC step=    0 loss=0.978687
 BC step=  400 loss=0.400577
@@ -234,13 +222,12 @@ Aggregate: SR=1.000 SR_M=0.250 mcf=1.00/4 H/logM=0.000 Hs/logM=0.000 radius=0.75
 ### plain dsrl g0
 
 ```text
-
-behavior-mode) (base) ap@ap:~/Documents/behavior_mode$  uv run python train.py \
+uv run python train.py \
   run=diagnostic \
   experiment=plain_dsrl \
   policy=single_step \
   landscape=g0
-output_dir=/home/ap/Documents/behavior_mode/outputs/2026-09-24/21-19-09_plain_dsrl_single_step_g0
+output_dir=outputs/2026-09-24/21-19-09_plain_dsrl_single_step_g0
 Pretraining one frozen BC policy shared by all training seeds...
 BC step=    0 loss=0.978687
 BC step=  400 loss=0.400577
@@ -267,26 +254,24 @@ Aggregate: SR=1.000 SR_M=0.250 mcf=1.00/4 H/logM=0.000 Hs/logM=0.000 radius=0.77
 
 
 
-# Funcitonal anchor
+# Functional Anchor
 
-The functional anchor can loosely be viewed as behavior distillation from the unsteered BC policy
+The functional anchor can loosely be viewed as behavior distillation from the unsteered BC policy.
 
-# Notes
+### Interaction Between BC Steps and BMD Adaptation on g2
 
-what i observed is that if i  reduce the BC steps then BMD can do better in g2, but if 
-i increase the bc steps then BMD doesnt do that well.
+Lower BC budgets (e.g., 2,000 steps) allow BMD to adapt more effectively on `g2` by providing a flexible, steerable prior. In contrast, higher BC budgets (e.g., 20,000 steps) create deep attractor basins along the demonstration axes that constrain steering flexibility.
 
-## bmd with 2000 steps
+## BMD with 2,000 BC Steps
 
 ```text
-
-(behavior-mode) (base) ap@ap:~/Documents/behavior_mode$ uv run python train.py \
+uv run python train.py \
   run=diagnostic \
-  policy=single_step \          
+  policy=single_step \
   policy.bc_steps=2000 \
   experiment=bmd \
   landscape=g2
-output_dir=/home/ap/Documents/behavior_mode/outputs/2026-09-24/20-35-47_bmd_single_step_g2
+output_dir=outputs/2026-09-24/20-35-47_bmd_single_step_g2
 Pretraining one frozen BC policy shared by all training seeds...
 BC step=    0 loss=0.978687
 BC step=  400 loss=0.400577
@@ -304,17 +289,16 @@ Aggregate: SR=0.984 SR_M=0.738 mcf=3.00/4 H/logM=0.650 Hs/logM=0.648 radius=0.77
 
 ```
 
-## bmd with 20k steps
+## BMD with 20,000 BC Steps
 
 ```text
-
-behavior-mode) (base) ap@ap:~/Documents/behavior_mode$ uv run python train.py \
+uv run python train.py \
   run=diagnostic \
   policy=single_step \
   policy.bc_steps=20000 \
   experiment=bmd \
   landscape=g2
-output_dir=/home/ap/Documents/behavior_mode/outputs/2026-09-24/20-27-18_bmd_single_step_g2
+output_dir=outputs/2026-09-24/20-27-18_bmd_single_step_g2
 Pretraining one frozen BC policy shared by all training seeds...
 BC step=    0 loss=0.978687
 BC step= 4000 loss=0.225510
@@ -333,11 +317,10 @@ Aggregate: SR=0.559 SR_M=0.397 mcf=0.00/4 H/logM=0.740 Hs/logM=0.690 radius=0.85
 ```
 
 
-## function anchor g0
+## Functional Anchor g5 (Rotated from g0)
 
 ```text
-
-(behavior-mode) (base) ap@ap:~/Documents/behavior_mode$ uv run python train.py \
+uv run python train.py \
   run=diagnostic \
   experiment=plain_dsrl \
   policy=single_step \
@@ -348,7 +331,7 @@ Aggregate: SR=0.559 SR_M=0.397 mcf=0.00/4 H/logM=0.740 Hs/logM=0.690 radius=0.85
   +experiment.dsrl_anchor_type=functional \
   +experiment.dsrl_anchor_coef=1.0 \
   +experiment.dsrl_anchor_seed=20260824
-output_dir=/home/ap/Documents/behavior_mode/outputs/2026-09-24/21-13-39_plain_dsrl_single_step_g5
+output_dir=outputs/2026-09-24/21-13-39_plain_dsrl_single_step_g5
 Pretraining one frozen BC policy shared by all training seeds...
 BC step=    0 loss=0.978687
 BC step= 4000 loss=0.225510
@@ -375,7 +358,7 @@ Aggregate: SR=0.984 SR_M=0.982 mcf=4.00/4 H/logM=0.947 Hs/logM=0.945 radius=0.75
 # Final
 
 
-## No Mi no ciriucullum
+## No MI, No Curriculum
 ```text
 
 plain_dsrl + k_latent=8 + entropy=0.
@@ -410,13 +393,10 @@ Aggregate: SR=0.953 SR_M=0.559 mcf=2.00/4 H/logM=0.530 Hs/logM=0.507 radius=0.76
 
 
 
- ## Different bc steps for BMD 
+## Different BC Steps for BMD
 
-
- ```text
-
+```text
   uv run python train.py -m   run=diagnostic   run.training_seeds='[0,1,2]'   policy=single_step   policy.bc_steps=2000,5000,10000,20000   experiment=bmd   landscape=g2   hydra.sweep.dir='multirun/bmd_bc_budget_g2'   'hydra.sweep.subdir=bc_${policy.bc_steps}'
-
 ```
 
 | BC steps | BC prior SR | Trained SR | SR_M | mcf /4 | H/logM | Hs/logM |
@@ -429,7 +409,7 @@ Aggregate: SR=0.953 SR_M=0.559 mcf=2.00/4 H/logM=0.530 Hs/logM=0.507 radius=0.76
 
 
 
-## BC  Epoch based diagnoistics NO RL 
+## BC Epoch-based Diagnostics (No RL)
 
 
 ### Overview of the Three Diagnostic Runs
@@ -458,7 +438,7 @@ Because the BC model is **always trained on unrotated demonstrations** (`rotatio
 
 
 
-## No Mi schedule
+## No MI Schedule Sweep
 
 
 
@@ -522,7 +502,7 @@ This Hydra sweep tested the impact of the **entropy bonus** when **Mutual Inform
 
 
 
-## BC epoch with RL (BMD)
+## BC Epochs with RL (BMD)
 
 
 ### Overview of `bmd_bc_budget_g2`
@@ -548,7 +528,7 @@ This Hydra sweep tested how the **training duration of the frozen Behavioral Clo
 ---
 
 
-## BMD with more more total epochs (more env transitions)
+## BMD with More Total Epochs
 
 ### Overview of `bmd_training_budget_g2`
 
@@ -1206,7 +1186,7 @@ For single-step BMD on `landscape=g2`, the optimal BC budget remains around the 
 
 
 
-## Final functional anchor
+## Final Functional Anchor Sweep (g5)
 
 ### Analysis of `final_functional_anchor_g5`
 

@@ -298,15 +298,3 @@ uv run python -m pytest -q
 # 14 passed
 ```
 
-## Scope and recommended next experiment
-
-These are development results: three training seeds and 256 evaluation episodes
-per seed, with `min_attempts=5`. They are appropriate for implementation
-validation and the main mechanistic comparison, but not yet the strongest
-publication protocol.
-
-For the blog's final table, rerun the selected methods with held-out seeds 3–10,
-1024 evaluation episodes, and `evaluation.min_attempts=103`. At minimum this
-should include plain, frozen, noise-only, and functional `λ=0.03`. The upstream
-arm can remain a development-only negative result if the selection rule is
-documented in advance.
